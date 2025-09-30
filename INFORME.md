@@ -1,6 +1,7 @@
 TAREA 1 INFORME
 
 Fabián Villalobos
+Agustín Escobar 
 
 Parte 1: Implementar la llamada al sistema getppid() en xv6 la cual retrona el ID del proceso padre del proceso que la retorna y realizar pruebas en ejecutable yosoytupadre.c
 
@@ -50,6 +51,13 @@ $ yosoytupadre
 [pre-fork] pid=3 ppid=2
 [hijo]    pid=4 ppid=3
 [padre]   pid=3 ppid=2 (esperé a 4)
+
+Esta salida nos indica que ppid del hijo (4) es el pid del padre (3)
+                            ppid del padre (3) es 2
+
+
+
+
 
 
 
