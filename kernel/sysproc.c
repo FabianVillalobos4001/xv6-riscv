@@ -113,3 +113,21 @@ sys_getppid(void)
   struct proc *p = myproc();
   return p->parent ? p->parent->pid : -1;
 }
+
+uint64
+sys_getancestor(void)
+{
+  int n;
+  argint(0, &n);           // NO devuelve código; solo escribe en n
+  if(n < 0)
+    return -1;
+
+  struct proc *p = myproc();
+  while(n > 0) {
+    if(p->parent == 0)     // ya no hay más ancestros
+      return -1;
+    p = p->parent;
+    n--;
+  }
+  return p->pid;           // n == 0: devuelve el PID del ancestro pedido
+}

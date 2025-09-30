@@ -55,12 +55,32 @@ $ yosoytupadre
 Esta salida nos indica que ppid del hijo (4) es el pid del padre (3)
                             ppid del padre (3) es 2
 
+Parte 2: Implementación avanzada getancestor(int) 
 
+Para la parte 2 replicamos los pasos de la parte 1 aplicando exactamente las mismas modificaciónes con excepcion de la logica de sysproc.c donde colocamos:
+    
+                                                                                                                                                                uint64
+                                                                                                                                                            sys_getancestor(void)
+                                                                                                                                                            {
+                                                                                                                                                            int n;
+                                                                                                                                                            argint(0, &n);         
+                                                                                                                                                            if(n < 0)
+                                                                                                                                                                return -1;
 
+                                                                                                                                                            struct proc *p = myproc();
+                                                                                                                                                            while(n > 0) {
+                                                                                                                                                                if(p->parent == 0)   
+                                                                                                                                                                return -1;
+                                                                                                                                                                p = p->parent;
+                                                                                                                                                                n--;
+                                                                                                                                                            }
+                                                                                                                                                            return p->pid;          
 
-
-
-
+Y tambien modificamos el archivo de prueba yosoytupadre.c para que acepte la nueva logica obteniendo: $ yosoytupadre
+[pre-fork] pid=3 ppid=2 anc0=3 anc1=2 anc99=-1
+[hijo]    pid=4 ppid=3 anc0=4 anc1=3 anc2=2 anc99=-1
+[padre]   pid=3 ppid=2 anc0=3 anc1=2 (esperé a 4)
+                                                                                                                                                
 
 
 
