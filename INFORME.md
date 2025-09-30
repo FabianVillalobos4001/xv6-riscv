@@ -57,30 +57,46 @@ Esta salida nos indica que ppid del hijo (4) es el pid del padre (3)
 
 Parte 2: Implementación avanzada getancestor(int) 
 
+Para esta parte revisamos el flujo de syscalls con parámetros enteros, usando como guías `sleep(int)` y `kill(int)`. Esto nos sirvió para entender cómo capturar argumentos con `argint()` dentro de `sysproc.c` y qué validaciones realizar como la ausencia de ancestros).
+
+
 Para la parte 2 replicamos los pasos de la parte 1 aplicando exactamente las mismas modificaciónes con excepcion de la logica de sysproc.c donde colocamos:
     
-                                                                                                                                                                uint64
-                                                                                                                                                            sys_getancestor(void)
-                                                                                                                                                            {
-                                                                                                                                                            int n;
-                                                                                                                                                            argint(0, &n);         
-                                                                                                                                                            if(n < 0)
-                                                                                                                                                                return -1;
+    uint64
+sys_getancestor(void)
+{
+int n;
+argint(0, &n);         
+if(n < 0)
+    return -1;
 
-                                                                                                                                                            struct proc *p = myproc();
-                                                                                                                                                            while(n > 0) {
-                                                                                                                                                                if(p->parent == 0)   
-                                                                                                                                                                return -1;
-                                                                                                                                                                p = p->parent;
-                                                                                                                                                                n--;
-                                                                                                                                                            }
-                                                                                                                                                            return p->pid;          
+struct proc *p = myproc();
+while(n > 0) {
+    if(p->parent == 0)   
+    return -1;
+    p = p->parent;
+    n--;
+}
+return p->pid;          
 
 Y tambien modificamos el archivo de prueba yosoytupadre.c para que acepte la nueva logica obteniendo: $ yosoytupadre
 [pre-fork] pid=3 ppid=2 anc0=3 anc1=2 anc99=-1
 [hijo]    pid=4 ppid=3 anc0=4 anc1=3 anc2=2 anc99=-1
 [padre]   pid=3 ppid=2 anc0=3 anc1=2 (esperé a 4)
+
+**Casos límite vistos**
+ `n = 0`: retorna el `pid` del proceso actual.
+ `n = 1`: equivale a `getppid()`.
+ `n` muy grande (99) : si no hay suficientes niveles (o simplemente no tiene más ancestros), retorna `-1`.
+ Límite superior: al alcanzar `init` (`parent == 0`), no hay más ancestros; retorna `-1`.
+ Parámetros inválidos: `n < 0` también retorna `-1`.
+
+
+ Al principio omitimos verificar el retorno de `argint(0, &n)` y la validación de `n < 0`; esto podía causar resultados inconsistentes. Lo corregimos agregando la condición `if (argint(0, &n) < 0 || n < 0) return -1;`.
+ También aclaramos la semántica de `getancestor(0)`: debe ser el proceso actual. Inicialmente lo interpretamos como el padre y ajustamos el bucle para que `n=0` no avance.
+
                                                                                                                                                 
+
 
 
 
