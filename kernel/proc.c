@@ -146,6 +146,10 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // Initialize lottery scheduler fields
+  p->tickets = 100;    // Default number of tickets
+  p->run_slices = 0;   // Initialize run count
+
   return p;
 }
 
@@ -423,38 +427,53 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-
+  
   c->proc = 0;
   for(;;){
-    // The most recent process to run may have had interrupts
-    // turned off; enable them to avoid a deadlock if all
-    // processes are waiting. Then turn them back off
-    // to avoid a possible race between an interrupt
-    // and wfi.
+    // Enable interrupts on this processor.
     intr_on();
     intr_off();
-
-    int found = 0;
+    
+    // Calculate total tickets of RUNNABLE processes
+    int total_tickets = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        found = 1;
+        total_tickets += p->tickets;
       }
       release(&p->lock);
     }
-    if(found == 0) {
-      // nothing to run; stop running on this core until an interrupt.
+    
+    // If no tickets, nothing to run
+    if(total_tickets == 0) {
       asm volatile("wfi");
+      continue;
+    }
+    
+    // Choose winning ticket
+    int winner = (rand() % total_tickets) + 1;
+    
+    // Find winning process
+    int ticket_count = 0;
+    struct proc *chosen = 0;
+    
+    for(p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if(p->state == RUNNABLE) {
+        ticket_count += p->tickets;
+        if(ticket_count >= winner && chosen == 0) {
+          chosen = p;
+          p->run_slices++; // Increment run count
+          p->state = RUNNING;
+          c->proc = p;
+          swtch(&c->context, &p->context);
+          
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+          c->proc = 0;
+        }
+      }
+      release(&p->lock);
     }
   }
 }
