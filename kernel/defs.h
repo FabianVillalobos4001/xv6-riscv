@@ -9,6 +9,9 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+// sysproc.c
+uint64          sys_settickets(void);
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);

@@ -6,6 +6,13 @@
 #include "proc.h"
 #include "defs.h"
 
+// Simple random number generator for lottery scheduling
+static unsigned int seed = 1;
+static unsigned int rand(void) {
+    seed = seed * 1664525 + 1013904223;
+    return seed;
+}
+
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
