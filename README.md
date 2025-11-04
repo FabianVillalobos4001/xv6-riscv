@@ -1,10 +1,11 @@
-# Lottery Scheduler Implementation for XV6
+# Implementación de Lottery Scheduler
 
-Este proyecto implementa un planificador por lotería (Lottery Scheduler) en el sistema operativo XV6, reemplazando el planificador Round-Robin original.
 
-## Funcionamiento y Lógica de la Implementación
+Implementación de Lottery Scheduler en Xv6, reemplazando el planificador Round-Robin original.
 
-El planificador por lotería funciona de la siguiente manera:
+
+## Funcionamiento y Lógica
+
 
 1. Cada proceso tiene un número de tickets (por defecto 100) que representa su prioridad.
 2. En cada ciclo de planificación:
@@ -13,62 +14,76 @@ El planificador por lotería funciona de la siguiente manera:
    - Se selecciona el proceso que "posee" el ticket ganador
    - El proceso seleccionado se ejecuta por un quantum
 
-## Modificaciones Realizadas
 
-### Archivos y Cambios Clave
+## Modificaciones que Realizamos
 
-1. `kernel/proc.h`:
-   - Agregado campo `tickets` para almacenar los tickets de cada proceso
-   - Agregado campo `run_slices` para contabilidad de ejecución
 
-2. `kernel/proc.c`:
-   - Modificada función `allocproc()` para inicializar tickets y run_slices
-   - Implementado nuevo scheduler con selección por lotería
-   - Contabilidad de ejecuciones mediante run_slices
+`kernel/proc.h`:
+   - Agregamos el campo `tickets` para almacenar los tickets de cada proceso
+   - Agregamos el campo `run_slices` para contabilidad de ejecución
 
-3. `kernel/syscall.h`, `kernel/syscall.c`:
-   - Agregada nueva syscall `settickets`
 
-4. `user/settickets.c`:
+`kernel/proc.c`:
+   - Modificamos la función `allocproc()` para inicializar tickets y run_slices
+   - Implementamos el nuevo scheduler con selección por lotería
+   - Se implementó el uso de contabilidad de ejecuciones mediante run_slices
+
+
+`kernel/syscall.h`, `kernel/syscall.c`:
+   - Se agregó la llamada al sistema `settickets`
+
+
+`user/settickets.c`:
    - Implementado programa para modificar tickets de un proceso
 
-5. `user/gdemo.c`:
-   - Programa de prueba que crea múltiples procesos con diferentes tickets
 
-## Dificultades y Soluciones
+`user/gdemo.c`:
+   - Este es el programa de prueba que crea múltiples procesos con diferentes tickets
 
-1. Generación de números aleatorios:
+
+## Dificultades enfrentadas y sus Soluciones
+
+
+Generación de números aleatorios:
    - Solución: Utilización del generador pseudo-aleatorio existente
 
-2. Contabilidad precisa:
+
+Contabilidad precisa:
    - Solución: Incremento de run_slices al momento de selección
 
-3. Sincronización:
+
+Sincronización:
    - Solución: Mantenimiento cuidadoso de los locks existentes
+
 
 ## Problemas del Lottery Scheduler
 
-1. No determinista:
+
+No determinista:
    - La naturaleza aleatoria puede llevar a resultados impredecibles
    - Procesos importantes podrían sufrir retrasos inesperados
 
-2. Overhead:
+
+Overhead:
    - Necesidad de calcular total de tickets en cada ciclo
    - Generación de números aleatorios
    - Búsqueda del proceso ganador
-
-3. Granularidad:
+	
+Granularidad:
    - La asignación de tickets es discreta
    - Difícil ajustar proporciones precisas
 
-4. Inanición posible:
+
+Inanición posible:
    - Procesos con pocos tickets podrían no ser seleccionados por largo tiempo
    - No hay garantía de progreso
 
-5. Complejidad de ajuste:
+
+Complejidad de ajuste:
    - Difícil determinar la cantidad óptima de tickets
    - El comportamiento puede variar significativamente con diferentes distribuciones
 
-6. Fairness a corto plazo:
+
+Fairness a corto plazo:
    - La justicia solo se garantiza estadísticamente a largo plazo
    - Períodos cortos pueden mostrar gran desbalance
