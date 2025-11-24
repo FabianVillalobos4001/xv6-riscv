@@ -105,3 +105,86 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// parte de la tarea 3
+
+// helper para mrdprotect y munrdprotect
+
+// Cambia el bit PTE_R en un rango de memoria de usuario.
+// set = 0 -> limpia PTE_R (prohibir lectura)
+// set = 1 -> pone PTE_R (permitir lectura)
+static int
+do_rdprotect(uint64 addr, int len, int set)
+{
+  struct proc *p = myproc();
+
+  // Validaciones básicas
+  if (len <= 0)
+    return -1;
+
+  if (addr % PGSIZE != 0)  // addr debe estar alineada a página
+    return -1;
+
+  uint64 start = addr;
+  uint64 end   = addr + (uint64)len * PGSIZE;
+
+  // Espacio de usuario, todo debe estar dentro de [0, p->sz)
+  if (start >= p->sz || end > p->sz)
+    return -1;
+
+  // Validar todas las páginas
+  for (uint64 va = start; va < end; va += PGSIZE) {
+    pte_t *pte = walk(p->pagetable, va, 0);
+    if (pte == 0)
+      return -1;            // no hay PTE para esta VA
+
+    if ((*pte & PTE_V) == 0)
+      return -1;            // página no válida
+
+    if ((*pte & PTE_U) == 0)
+      return -1;            // no es de usuario (probable kernel)
+  }
+
+  // Modificar PTE_R
+  for (uint64 va = start; va < end; va += PGSIZE) {
+    pte_t *pte = walk(p->pagetable, va, 0);
+
+    if (set)
+      *pte |= PTE_R;       // permitir lectura
+    else
+      *pte &= ~PTE_R;      // quitar lectura
+  }
+
+  // Limpiar TLB
+  sfence_vma();
+
+  return 0;
+}
+
+
+
+// Protege una region de memoria contra escrituras
+uint64
+sys_mrdprotect(void)
+{
+  uint64 addr;
+  int len;
+
+  // En esta versión, argaddr y argint no retornan valor
+  argaddr(0, &addr);
+  argint(1, &len);
+
+  return do_rdprotect(addr, len, 0);  // 0 = quitar lectura
+}
+
+uint64
+sys_munrdprotect(void)
+{
+  uint64 addr;
+  int len;
+
+  argaddr(0, &addr);
+  argint(1, &len);
+
+  return do_rdprotect(addr, len, 1);  // 1 = restaurar lectura
+}

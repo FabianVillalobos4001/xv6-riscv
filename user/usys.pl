@@ -42,3 +42,6 @@ entry("getpid");
 entry("sbrk");
 entry("pause");
 entry("uptime");
+# PARTE DE LA TAREA 3
+entry("mrdprotect");
+entry("munrdprotect");
