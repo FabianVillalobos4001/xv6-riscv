@@ -50,6 +50,8 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
+
+  uint64 scause = r_scause();
   
   if(r_scause() == 8){
     // system call
@@ -71,6 +73,12 @@ usertrap(void)
   } else if((r_scause() == 15 || r_scause() == 13) &&
             vmfault(p->pagetable, r_stval(), (r_scause() == 13)? 1 : 0) != 0) {
     // page fault on lazily-allocated page
+  } else if (scause == 13 || scause == 15) {
+    uint64 va = r_stval();
+    // page fault due to read-protected page
+    printf("usertrap(): page fault (scause=%lx) en va=%lx pid=%d\n",
+           scause, va, p->pid);
+    setkilled(p);
   } else {
     printf("usertrap(): unexpected scause 0x%lx pid=%d\n", r_scause(), p->pid);
     printf("            sepc=0x%lx stval=0x%lx\n", r_sepc(), r_stval());
